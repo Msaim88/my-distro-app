@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -25,16 +25,11 @@ jobs:
 
       - name: Fresh Setup and Auto Generate Code Files
         run: |
-          # پرانے تمام فولڈرز صاف کرنا
           rm -rf android pubspec.yaml lib
-          
-          # بالکل نیا پروجیکٹ ڈھانچہ تیار کرنا
           flutter create --project-name my_distro_app --platforms android .
           
-          # اینڈروئیڈ مینی فیسٹ میں پرنٹنگ اور بلوٹوتھ کی پرمیشنز ڈالنا
           sed -i '/<application/i \    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.PRINT" />' android/app/src/main/AndroidManifest.xml
           
-          # ہماری اصل ڈسٹری بیوشن ایپ کا مکمل کوڈ خودکار طریقے سے دوبارہ لکھنا
           cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
 
@@ -202,3 +197,6 @@ jobs:
                             : ListView.builder(
                                 itemCount: products.length,
                                 itemBuilder: (context, i) => ListTile(
+                                  title: Text(products[i]['name'], style: TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text('خرید: Rs.${products[i]['purchase']} | سیل: Rs.${products[i]['sale']}'),
+                                  trailing: Row(
