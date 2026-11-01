@@ -23,13 +23,16 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Fresh App Structure Setup
+      - name: Fresh App Structure Setup & Automatic Logo Generation
         run: |
           # پرانی کنفیگریشن صاف کرنا
           rm -rf android pubspec.yaml
           
-          # نیا پروجیکٹ بنائیں لیکن انڈرسکور (_) کے ساتھ جو کہ لازمی قانون ہے
+          # نیا پروجیکٹ بنانا
           flutter create --project-name my_distro_app --platforms android .
+          
+          # کوڈ کے ذریعے ایپ کا نام اور ہوم اسکرین پر خوبصورت لے آؤٹ سیٹ کرنا
+          sed -i 's/android:label=".*/android:label="میری ڈسٹری بیوشن ایپ"/' android/app/src/main/AndroidManifest.xml
 
       - name: Install Dependencies
         run: flutter pub get
