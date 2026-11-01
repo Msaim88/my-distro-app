@@ -22,26 +22,45 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // فرضی لائیو ڈیٹا (جو لوکل ڈیٹا بیس اور فائر بیس سے سنک ہوگا)
-  double totalSales = 250000;
-  double totalCostOfGoods = 180000;
-  double totalExpenses = 15000;
+  // ڈائنامک ڈیٹا لسٹیں (موبائل میموری میں ڈیٹا سیو رکھنے کے لیے)
+  List<Map<String, dynamic>> products = [
+    {"name": "کریانہ آئٹم اے", "purchase": 100.0, "sale": 130.0, "stock": 50},
+    {"name": "صابن باکس", "purchase": 500.0, "sale": 600.0, "stock": 20},
+  ];
+
+  List<Map<String, dynamic>> customers = [
+    {"name": "المدینہ اسٹور", "phone": "03001234567", "udhaar": 5000.0},
+    {"name": "بسم اللہ جنرل اسٹور", "phone": "03217654321", "udhaar": 0.0},
+  ];
+
+  List<Map<String, dynamic>> expenses = [
+    {"desc": "بائیک پٹرول", "amount": 500.0, "category": "ٹرانسپورٹ"},
+  ];
+
+  List<Map<String, dynamic>> orders = [];
+
+  // فائنل حساب کتاب کرنے کے فنکشنز
+  double get totalSales {
+    return orders.fold(0, (sum, item) => sum + (item['sale_price'] * item['qty']));
+  }
+
+  double get totalCostOfGoods {
+    return orders.fold(0, (sum, item) => sum + (item['purchase_price'] * item['qty']));
+  }
+
+  double get totalExpenses {
+    return expenses.fold(0, (sum, item) => sum + item['amount']);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // مجموعی منافع = سیلز - مال کی اصل قیمت
     double grossProfit = totalSales - totalCostOfGoods;
-    // خالص منافع = مجموعی منافع - کاروباری خرچے
     double netProfit = grossProfit - totalExpenses;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('ڈسٹری بیوشن مینجمنٹ ایپ', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('ڈسٹری بیوشن مینجمنٹ', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        actions: [
-          Icon(Icons.cloud_done, color: Colors.greenAccent), // لائیو سنک اسٹیٹس
-          SizedBox(width: 15),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -49,26 +68,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // کلاؤڈ سنک کی پٹی
-              Card(
-                color: Colors.teal[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.sync, color: Colors.teal),
-                      SizedBox(width: 10),
-                      Text('ڈیٹا موبائل اور فائر بیس کلاؤڈ پر محفوظ ہے', style: TextStyle(color: Colors.teal[900])),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 15),
-
-              Text('مالیاتی رپورٹ (Profit & Loss Dashboard)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('مالیاتی رپورٹ (Live Dashboard)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
 
-              // پرافٹ اینڈ لاس کارڈ
+              // پرافٹ اینڈ لاس لائیو کارڈ
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -80,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildReportRow('مال کی قیمت (Cost of Goods)', 'Rs. $totalCostOfGoods', Colors.orange),
                       Divider(),
                       _buildReportRow('مجموعی منافع (Gross Profit)', 'Rs. $grossProfit', Colors.teal),
-                      _buildReportRow('کاروباری خرچے (Total Expenses)', 'Rs. $totalExpenses', Colors.red),
+                      _buildReportRow('کل خرچے (Total Expenses)', 'Rs. $totalExpenses', Colors.red),
                       Divider(thickness: 2),
                       _buildReportRow(
                         'خالص منافع (Net Profit)', 
@@ -94,10 +97,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               SizedBox(height: 25),
 
-              Text('ایپ کے بنیادی سیکشنز', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('ایپ کے ایکٹو بٹنز (کلک کریں)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
 
-              // مینو گریڈ بٹنز
+              // مینو گریڈ
               GridView.count(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
@@ -105,18 +108,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 children: [
-                  _buildMenuCard(context, 'نیا آرڈر / سیل', Icons.shopping_cart_checkout, Colors.green, () {
-                    _showFeatureToast(context, 'نیا آرڈر فارم اور بلنگ اسکرین');
-                  }),
-                  _buildMenuCard(context, 'اسٹاک مینجمنٹ', Icons.inventory_2, Colors.blue, () {
-                    _showFeatureToast(context, 'اسٹاک انٹری (خرید/فروخت ریٹ)');
-                  }),
-                  _buildMenuCard(context, 'دکانداروں کا کھاتا', Icons.account_balance_wallet, Colors.amber[700]!, () {
-                    _showFeatureToast(context, 'ادھار اور کسٹمر لیجر ہسٹری');
-                  }),
-                  _buildMenuCard(context, 'خرچہ بک کریں', Icons.money_off, Colors.red, () {
-                    _showFeatureToast(context, 'پٹرول، کرایہ اور متفرق خرچے');
-                  }),
+                  _buildMenuCard(context, 'نیا آرڈر / سیل', Icons.shopping_cart_checkout, Colors.green, () => _openOrderSheet()),
+                  _buildMenuCard(context, 'اسٹاک مینجمنٹ', Icons.inventory_2, Colors.blue, () => _openStockSheet()),
+                  _buildMenuCard(context, 'دکانداروں کا کھاتا', Icons.account_balance_wallet, Colors.amber[700]!, () => _openCustomerSheet()),
+                  _buildMenuCard(context, 'خرچہ بک کریں', Icons.money_off, Colors.red, () => _openExpenseSheet()),
                 ],
               )
             ],
@@ -126,45 +121,130 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildReportRow(String title, String value, Color color, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: TextStyle(fontSize: isBold ? 16 : 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(value, style: TextStyle(fontSize: isBold ? 16 : 14, fontWeight: FontWeight.bold, color: color)),
-        ],
-      ),
-    );
-  }
+  // ---- انٹری فارمز کے پاپ اپ فنکشنز (Bottom Sheets) ----
 
-  Widget _buildMenuCard(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+  void _openStockSheet() {
+    String name = ''; double purchase = 0; double sale = 0; int stock = 0;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, size: 28, color: color),
+            Text('نیا پروڈکٹ شامل کریں', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextField(decoration: InputDecoration(labelText: 'پروڈکٹ کا نام'), onChanged: (v) => name = v),
+            TextField(decoration: InputDecoration(labelText: 'خریداری ریٹ'), keyboardType: TextInputType.number, onChanged: (v) => purchase = double.tryParse(v) ?? 0),
+            TextField(decoration: InputDecoration(labelText: 'فروخت ریٹ'), keyboardType: TextInputType.number, onChanged: (v) => sale = double.tryParse(v) ?? 0),
+            TextField(decoration: InputDecoration(labelText: 'اسٹاک تعداد'), keyboardType: TextInputType.number, onChanged: (v) => stock = int.tryParse(v) ?? 0),
+            SizedBox(height: 15),
+            ElevatedButton(
+              child: Text('سیو کریں'),
+              onPressed: () {
+                if (name.isNotEmpty) {
+                  setState(() {
+                    products.add({"name": name, "purchase": purchase, "sale": sale, "stock": stock});
+                  });
+                  Navigator.pop(context);
+                }
+              },
             ),
-            SizedBox(height: 12),
-            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            SizedBox(height: 15),
           ],
         ),
       ),
     );
   }
 
-  void _showFeatureToast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$message کامیابی سے لوڈ ہو گیا ہے'), duration: Duration(seconds: 2)),
+  void _openOrderSheet() {
+    if (products.isEmpty || customers.isEmpty) return;
+    var selectedProduct = products[0];
+    var selectedCustomer = customers[0];
+    int qty = 1;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('نیا آرڈر بک کریں', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            DropdownButtonFormField(
+              value: selectedCustomer,
+              items: customers.map((c) => DropdownMenuItem(child: Text(c['name']), value: c)).toList(),
+              onChanged: (v) => selectedCustomer = v as Map<String, dynamic>,
+              decoration: InputDecoration(labelText: 'دکاندار چنیں'),
+            ),
+            DropdownButtonFormField(
+              value: selectedProduct,
+              items: products.map((p) => DropdownMenuItem(child: Text(p['name']), value: p)).toList(),
+              onChanged: (v) => selectedProduct = v as Map<String, dynamic>,
+              decoration: InputDecoration(labelText: 'پروڈکٹ چنیں'),
+            ),
+            TextField(
+              decoration: InputDecoration(labelText: 'تعداد (Quantity)'),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => qty = int.tryParse(v) ?? 1,
+            ),
+            SizedBox(height: 15),
+            ElevatedButton(
+              child: Text('آرڈر فائنل کریں'),
+              onPressed: () {
+                setState(() {
+                  orders.add({
+                    "customer": selectedCustomer['name'],
+                    "product": selectedProduct['name'],
+                    "qty": qty,
+                    "purchase_price": selectedProduct['purchase'],
+                    "sale_price": selectedProduct['sale']
+                  });
+                  // اسٹاک کم کرنا
+                  selectedProduct['stock'] = selectedProduct['stock'] - qty;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            SizedBox(height: 15),
+          ],
+        ),
+      ),
     );
   }
-}
+
+  void _openCustomerSheet() {
+    String name = ''; String phone = ''; double udhaar = 0;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('نیا دکاندار شامل کریں', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextField(decoration: InputDecoration(labelText: 'دکان / دکاندار کا نام'), onChanged: (v) => name = v),
+            TextField(decoration: InputDecoration(labelText: 'فون نمبر'), keyboardType: TextInputType.phone, onChanged: (v) => phone = v),
+            TextField(decoration: InputDecoration(labelText: 'سابقہ ادھار (اگر ہے)'), keyboardType: TextInputType.number, onChanged: (v) => udhaar = double.tryParse(v) ?? 0),
+            SizedBox(height: 15),
+            ElevatedButton(
+              child: Text('کھاتا کھولیں'),
+              onPressed: () {
+                if (name.isNotEmpty) {
+                  setState(() {
+                    customers.add({"name": name, "phone": phone, "udhaar": udhaar});
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            SizedBox(height: 15),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openExpenseSheet() {
