@@ -23,16 +23,23 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Fresh App Structure Setup & Automatic Logo Generation
+      - name: Configure and Inject Custom Code
         run: |
-          # پرانی کنفیگریشن صاف کرنا
-          rm -rf android pubspec.yaml
+          # عارضی طور پر ہمارے اصل سورس کوڈ کا بیک اپ لینا
+          mkdir -p backup_lib
+          cp lib/main.dart backup_lib/main.dart
           
-          # نیا پروجیکٹ بنانا
+          # نیا پروجیکٹ اسٹرکچر بنانا
+          rm -rf android pubspec.yaml lib
           flutter create --project-name my_distro_app --platforms android .
           
-          # کوڈ کے ذریعے ایپ کا نام اور ہوم اسکرین پر خوبصورت لے آؤٹ سیٹ کرنا
-          sed -i 's/android:label=".*/android:label="میری ڈسٹری بیوشن ایپ"/' android/app/src/main/AndroidManifest.xml
+          # اپنے اصل کوڈ کو دوبارہ سسٹم کے اندر انجیکٹ (فٹ) کرنا
+          rm -rf lib
+          mkdir -p lib
+          cp backup_lib/main.dart lib/main.dart
+          
+          # اینڈروئیڈ مینی فیسٹ میں پرنٹر پرمیشنز خودکار فٹ کرنا
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.PRINT" />' android/app/src/main/AndroidManifest.xml
 
       - name: Install Dependencies
         run: flutter pub get
