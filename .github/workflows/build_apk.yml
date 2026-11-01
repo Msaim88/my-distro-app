@@ -25,12 +25,11 @@ jobs:
 
       - name: Fresh App Structure Setup
         run: |
-          # پرانی اینڈروئیڈ کنفیگریشن صاف کرنا تاکہ نیا انجن چلے
+          # پرانی کنفیگریشن صاف کرنا
           rm -rf android pubspec.yaml
-          # فلٹر کو کمانڈ دینا کہ وہ خود نیا اینڈروئیڈ مینی فیسٹ اور v2 embedding بنائے
-          flutter create --platforms android .
-          # ہمارے کسٹم نام کو pubspec میں سیٹ کرنا
-          sed -i 's/name: .*/name: my_distribution_app/' pubspec.yaml
+          
+          # نیا پروجیکٹ بنائیں لیکن انڈرسکور (_) کے ساتھ جو کہ لازمی قانون ہے
+          flutter create --project-name my_distro_app --platforms android .
 
       - name: Install Dependencies
         run: flutter pub get
