@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://android.com">
+        <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.PRINT" />
+
     <application
         android:label="میری ڈسٹری بیوشن ایپ"
         android:icon="@mipmap/ic_launcher">
