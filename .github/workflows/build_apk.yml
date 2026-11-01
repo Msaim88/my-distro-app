@@ -1,202 +1,55 @@
-name: Build Android APK
+name: Build Distribution Management APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [main, master]
+    tags:
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: temurin
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
 
-      - name: Fresh Setup and Auto Generate Code Files
+      - name: Check Flutter Project
         run: |
-          rm -rf android pubspec.yaml lib
-          flutter create --project-name my_distro_app --platforms android .
-          
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.BLUETOOTH" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\n    <uses-permission android:name="android.permission.PRINT" />' android/app/src/main/AndroidManifest.xml
-          
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
+          if [ ! -f pubspec.yaml ]; then
+            echo "ERROR: Flutter project pubspec.yaml missing"
+            exit 1
+          fi
 
-          void main() => runApp(DistributionApp());
+      - name: Install Dependencies
+        run: flutter pub get
 
-          class DistributionApp extends StatelessWidget {
-            @override
-            Widget build(BuildContext context) {
-              return MaterialApp(
-                debugShowCheckedModeBanner: false,
-                theme: ThemeData(primarySwatch: Colors.teal, scaffoldBackgroundColor: Colors.grey),
-                home: DashboardScreen(),
-              );
-            }
-          }
+      - name: Build APK
+        run: flutter build apk --release
 
-          class DashboardScreen extends StatefulWidget {
-            @override
-            _DashboardScreenState createState() => _DashboardScreenState();
-          }
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Distribution-Management-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
 
-          class _DashboardScreenState extends State<DashboardScreen> {
-            List<Map<String, dynamic>> products = [];
-            List<Map<String, dynamic>> customers = [];
-            List<Map<String, dynamic>> expenses = [];
-            List<Map<String, dynamic>> orders = [];
-
-            double get totalSales => orders.fold(0, (sum, item) => sum + (item['sale_price'] * item['qty']));
-            double get totalCostOfGoods => orders.fold(0, (sum, item) => sum + (item['purchase_price'] * item['qty']));
-            double get totalExpenses => expenses.fold(0, (sum, item) => sum + item['amount']);
-
-            @override
-            Widget build(BuildContext context) {
-              double grossProfit = totalSales - totalCostOfGoods;
-              double netProfit = grossProfit - totalExpenses;
-
-              return Scaffold(
-                appBar: AppBar(title: Text('ڈسٹری بیوشن پرو مینجمنٹ'), centerTitle: true),
-                body: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                _row('کل سیل (Sales)', 'Rs. $totalSales', Colors.blue),
-                                _row('مال کی لاگت (Cost)', 'Rs. $totalCostOfGoods', Colors.orange),
-                                Divider(),
-                                _row('مجموعی منافع (Gross)', 'Rs. $grossProfit', Colors.teal),
-                                _row('کل خرچے (Expenses)', 'Rs. $totalExpenses', Colors.red),
-                                Divider(thickness: 2),
-                                _row('خالص منافع (Net Profit)', 'Rs. $netProfit', Colors.green, isBold: true),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          children: [
-                            _btn('نیا آرڈر / انوائس', Icons.receipt_long, Colors.green, _openOrder),
-                            _btn('انوینٹری / اسٹاک', Icons.inventory, Colors.blue, _viewInventory),
-                            _btn('دکانداروں کا کھاتا', Icons.account_balance_wallet, Colors.amber, _viewCustomers),
-                            _btn('خرچہ بک کریں', Icons.money_off, Colors.red, _viewExpenses),
-                            _btn('پرانے آرڈرز ہسٹری', Icons.history, Colors.purple, _viewOrdersHistory),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            void _viewCustomers() {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => StatefulBuilder(
-                  builder: (context, setModalState) => Padding(
-                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('دکانداروں کی لسٹ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        Container(
-                          height: 200,
-                          child: customers.isEmpty 
-                            ? Center(child: Text('کوئی دکاندار موجود نہیں ہے'))
-                            : ListView.builder(
-                                itemCount: customers.length,
-                                itemBuilder: (context, i) => ListTile(
-                                  title: Text(customers[i]['name'], style: TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text('فون: ${customers[i]['phone']} | ادھار: Rs.${customers[i]['udhaar']}'),
-                                  trailing: IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () { setState(() { customers.removeAt(i); }); setModalState(() {}); }),
-                                ),
-                              ),
-                        ),
-                        Divider(),
-                        ElevatedButton.icon(
-                          icon: Icon(Icons.person_add),
-                          label: Text('نیا دکاندار شامل کریں'),
-                          onPressed: () {
-                            String name = ''; String phone = ''; double udhaar = 0;
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text('نیا دکاندار'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextField(decoration: InputDecoration(labelText: 'دکان کا نام'), onChanged: (v) => name = v),
-                                    TextField(decoration: InputDecoration(labelText: 'فون نمبر'), keyboardType: TextInputType.phone, onChanged: (v) => phone = v),
-                                    TextField(decoration: InputDecoration(labelText: 'سابقہ ادھار'), keyboardType: TextInputType.number, onChanged: (v) => udhaar = double.tryParse(v) ?? 0),
-                                  ],
-                                ),
-                                actions: [
-                                  ElevatedButton(
-                                    child: Text('سیو'),
-                                    onPressed: () {
-                                      if (name.isNotEmpty) {
-                                        setState(() { customers.add({"name": name, "phone": phone, "udhaar": udhaar}); });
-                                        setModalState(() {});
-                                        Navigator.pop(context);
-                                      }
-                                    },
-                                  )
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 15),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            void _viewInventory() {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => StatefulBuilder(
-                  builder: (context, setModalState) => Padding(
-                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('موجودہ اسٹاک رپورٹ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        Container(
-                          height: 200,
-                          child: products.isEmpty 
-                            ? Center(child: Text('اسٹاک بالکل خالی ہے'))
-                            : ListView.builder(
-                                itemCount: products.length,
-                                itemBuilder: (context, i) => ListTile(
-                                  title: Text(products[i]['name'], style: TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text('خرید: Rs.${products[i]['purchase']} | سیل: Rs.${products[i]['sale']}'),
-                                  trailing: Row(
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
